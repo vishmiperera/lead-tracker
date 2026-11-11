@@ -5,6 +5,7 @@ import { TopBar } from "@/components/TopBar";
 import { KpiSummaryRow } from "@/components/KpiSummaryRow";
 import { AnalyticsCharts } from "@/components/AnalyticsCharts";
 import { LeadsTable } from "@/components/LeadsTable";
+import { LeadsKanban } from "@/components/LeadsKanban";
 import { LeadDetailModal } from "@/components/LeadDetailModal";
 import { NewLeadModal } from "@/components/NewLeadModal";
 import { MetaWebhookTesterModal } from "@/components/MetaWebhookTesterModal";
@@ -21,7 +22,7 @@ import {
   supabase,
 } from "@/lib/supabase";
 import { Lead, LeadStatus } from "@/types";
-import { CheckCircle, Sparkles, BookOpen } from "lucide-react";
+import { CheckCircle, Sparkles, BookOpen, Table, Columns } from "lucide-react";
 
 export default function DashboardPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -30,6 +31,7 @@ export default function DashboardPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [noticeMessage, setNoticeMessage] = useState<string | null>(null);
+  const [activeView, setActiveView] = useState<"table" | "kanban">("table");
 
   // Modals state
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -210,16 +212,59 @@ export default function DashboardPage() {
         {/* 2. Visual Analytics & Recharts */}
         <AnalyticsCharts leads={leads} />
 
-        {/* 3. Centralized Inbound Leads Table */}
-        <LeadsTable
-          leads={leads}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          onStatusChange={handleStatusChange}
-          onSelectLead={(lead) => setSelectedLead(lead)}
-          onBatchStatusChange={handleBatchStatusChange}
-          onBatchDelete={handleBatchDelete}
-        />
+        {/* 3. View Switcher & Centralized Inbound Leads */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex rounded-xl p-0.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60">
+              <button
+                type="button"
+                onClick={() => setActiveView("table")}
+                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition flex items-center space-x-1.5 ${
+                  activeView === "table"
+                    ? "bg-white dark:bg-slate-700 text-[#2EA3E6] shadow-xs"
+                    : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                }`}
+              >
+                <Table className="w-3.5 h-3.5" />
+                <span>Table View</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveView("kanban")}
+                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition flex items-center space-x-1.5 ${
+                  activeView === "kanban"
+                    ? "bg-white dark:bg-slate-700 text-[#2EA3E6] shadow-xs"
+                    : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                }`}
+              >
+                <Columns className="w-3.5 h-3.5" />
+                <span>Pipeline Kanban</span>
+              </button>
+            </div>
+
+            <span className="text-xs text-slate-400 font-medium">
+              Showing {leads.length} total inquiries
+            </span>
+          </div>
+
+          {activeView === "table" ? (
+            <LeadsTable
+              leads={leads}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              onStatusChange={handleStatusChange}
+              onSelectLead={(lead) => setSelectedLead(lead)}
+              onBatchStatusChange={handleBatchStatusChange}
+              onBatchDelete={handleBatchDelete}
+            />
+          ) : (
+            <LeadsKanban
+              leads={leads}
+              onSelectLead={(lead) => setSelectedLead(lead)}
+              onStatusChange={handleStatusChange}
+            />
+          )}
+        </div>
       </main>
 
       {/* Footer */}
