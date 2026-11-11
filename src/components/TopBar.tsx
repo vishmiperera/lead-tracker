@@ -108,9 +108,9 @@ export function TopBar({
       >
         <div className="max-w-[1560px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between gap-3 sm:gap-4">
-            {/* Left: Brand Identity (MillionSpaces Logo) */}
-            <div className="flex items-center shrink-0">
-              <Link href="/" className="flex items-center group py-0.5" title="MillionSpaces">
+            {/* Left: Brand Identity (MillionSpaces Logo + Lead Tracker) */}
+            <div className="flex items-center space-x-2.5 sm:space-x-3 shrink-0">
+              <Link href="/" className="flex items-center group py-0.5" title="MillionSpaces Lead Tracker">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="/millionspaces-logo.png"
@@ -118,6 +118,12 @@ export function TopBar({
                   className="h-8 sm:h-9 w-auto object-contain transition-transform duration-200 group-hover:scale-105 dark:brightness-125 dark:drop-shadow-[0_1px_3px_rgba(255,255,255,0.12)]"
                 />
               </Link>
+              <span className="h-4 sm:h-4.5 w-px bg-slate-200 dark:bg-slate-700/80" />
+              <div className="flex items-center">
+                <span className="text-xs sm:text-[13px] font-bold tracking-tight text-slate-800 dark:text-slate-200 whitespace-nowrap">
+                  Lead Tracker
+                </span>
+              </div>
             </div>
 
             {/* Middle: Minimalist Command Search (Desktop & Laptop) */}
