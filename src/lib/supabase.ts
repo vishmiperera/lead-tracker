@@ -2,8 +2,11 @@ import { createClient } from "@supabase/supabase-js";
 import { Lead, LeadStatus } from "@/types";
 import { INITIAL_MOCK_LEADS } from "./mockData";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const DEFAULT_SUPABASE_URL = "https://qsxozlrbvlsoefxvpeoq.supabase.co";
+const DEFAULT_ANON_KEY = "sb_publishable_LkGOHSut0h0gsK8jxAmJQw_d1P_Hkna";
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || DEFAULT_ANON_KEY;
 
 export const isSupabaseConfigured = Boolean(
   supabaseUrl &&
@@ -14,13 +17,15 @@ export const isSupabaseConfigured = Boolean(
 
 // Client-side Supabase client
 export const supabase = isSupabaseConfigured
-  ? createClient(supabaseUrl!, supabaseAnonKey!)
+  ? createClient(supabaseUrl, supabaseAnonKey)
   : null;
 
 // Server-side admin client with service role key if available, or anon key
 export function getServiceSupabaseClient() {
   const serviceKey =
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    DEFAULT_ANON_KEY;
   if (!supabaseUrl || !serviceKey || supabaseUrl.includes("your-supabase-url")) {
     return null;
   }
