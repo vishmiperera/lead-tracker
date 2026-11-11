@@ -231,6 +231,48 @@ export async function batchDeleteLeads(ids: string[]): Promise<boolean> {
   return true;
 }
 
+export async function updateLeadAssignee(id: string, assignee: string): Promise<boolean> {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { error } = await supabase
+        .from("meta_whatsapp_leads")
+        .update({ assignee: assignee || null })
+        .eq("id", id);
+      if (!error) return true;
+    } catch (err) {
+      console.warn("Supabase update assignee error:", err);
+    }
+  }
+
+  const current = getLocalStoredLeads();
+  const updated = current.map((item) =>
+    item.id === id ? { ...item, assignee } : item
+  );
+  setLocalStoredLeads(updated);
+  return true;
+}
+
+export async function batchUpdateLeadAssignee(ids: string[], assignee: string): Promise<boolean> {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { error } = await supabase
+        .from("meta_whatsapp_leads")
+        .update({ assignee: assignee || null })
+        .in("id", ids);
+      if (!error) return true;
+    } catch (err) {
+      console.warn("Supabase batch update assignee error:", err);
+    }
+  }
+
+  const current = getLocalStoredLeads();
+  const updated = current.map((item) =>
+    ids.includes(item.id) ? { ...item, assignee } : item
+  );
+  setLocalStoredLeads(updated);
+  return true;
+}
+
 /**
  * Subscribes to real-time changes on the Supabase meta_whatsapp_leads table
  */

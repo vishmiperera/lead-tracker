@@ -27,6 +27,8 @@ interface LeadDetailModalProps {
   onStatusChange: (id: string, status: LeadStatus) => void;
   onSaveNotes: (id: string, notes: string) => void;
   onDeleteLead: (id: string) => void;
+  assignees?: string[];
+  onAssigneeChange?: (id: string, newAssignee: string) => void;
 }
 
 export function LeadDetailModal({
@@ -36,6 +38,8 @@ export function LeadDetailModal({
   onStatusChange,
   onSaveNotes,
   onDeleteLead,
+  assignees = [],
+  onAssigneeChange,
 }: LeadDetailModalProps) {
   const [notes, setNotes] = useState(lead?.notes || "");
   const [isSavingNotes, setIsSavingNotes] = useState(false);
@@ -256,6 +260,37 @@ export function LeadDetailModal({
                   </button>
                 );
               })}
+            </div>
+          </div>
+
+          {/* Assigned Team Member */}
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+              Assigned Team Member
+            </label>
+            <div className="flex items-center gap-3">
+              <div className="relative flex-1">
+                <select
+                  value={lead.assignee || "Unassigned"}
+                  onChange={(e) => {
+                    const val = e.target.value === "Unassigned" ? "" : e.target.value;
+                    onAssigneeChange?.(lead.id, val);
+                  }}
+                  className="w-full px-3.5 py-2 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-[#2EA3E6]"
+                >
+                  <option value="Unassigned">👤 Unassigned</option>
+                  {assignees.map((person) => (
+                    <option key={person} value={person}>
+                      👤 {person}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {lead.assignee && (
+                <span className="text-xs text-[#2EA3E6] font-semibold bg-[#2EA3E6]/10 px-2.5 py-2 rounded-xl">
+                  Assigned
+                </span>
+              )}
             </div>
           </div>
 

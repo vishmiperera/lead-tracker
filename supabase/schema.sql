@@ -18,8 +18,12 @@ CREATE TABLE IF NOT EXISTS public.meta_whatsapp_leads (
     message TEXT NOT NULL,
     notes TEXT,
     ad_id TEXT,
-    venue_interest TEXT
+    venue_interest TEXT,
+    assignee TEXT
 );
+
+-- Ensure column exists if table was already created earlier:
+ALTER TABLE public.meta_whatsapp_leads ADD COLUMN IF NOT EXISTS assignee TEXT;
 
 -- 3. Create helpful indexes for fast filtering and searching
 CREATE INDEX IF NOT EXISTS idx_leads_created_at ON public.meta_whatsapp_leads (created_at DESC);

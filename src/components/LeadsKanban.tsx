@@ -18,6 +18,8 @@ interface LeadsKanbanProps {
   leads: Lead[];
   onSelectLead: (lead: Lead) => void;
   onStatusChange: (id: string, newStatus: LeadStatus) => void;
+  assignees?: string[];
+  onAssigneeChange?: (id: string, newAssignee: string) => void;
 }
 
 const COLUMNS: { id: LeadStatus; label: string; headerColor: string; badgeColor: string; borderTop: string }[] = [
@@ -62,6 +64,8 @@ export function LeadsKanban({
   leads,
   onSelectLead,
   onStatusChange,
+  assignees = [],
+  onAssigneeChange,
 }: LeadsKanbanProps) {
   // Next stage transition helper
   const getNextStatus = (current: LeadStatus): LeadStatus | null => {
@@ -169,13 +173,27 @@ export function LeadsKanban({
                       </p>
 
                       {/* Action buttons footer */}
-                      <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between">
-                        <span className="text-[10px] text-slate-400">
-                          {new Date(lead.created_at).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                          })}
-                        </span>
+                      <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between gap-1">
+                        <div className="flex items-center space-x-1.5 overflow-hidden">
+                          <span className="text-[10px] text-slate-400 shrink-0">
+                            {new Date(lead.created_at).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                            })}
+                          </span>
+                          {lead.assignee ? (
+                            <span
+                              className="text-[10px] font-semibold text-[#0284C7] dark:text-[#2EA3E6] bg-[#2EA3E6]/10 px-1.5 py-0.5 rounded truncate max-w-[100px]"
+                              title={`Assigned to ${lead.assignee}`}
+                            >
+                              👤 {lead.assignee}
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-slate-400">
+                              👤 Unassigned
+                            </span>
+                          )}
+                        </div>
 
                         <div
                           className="flex items-center space-x-1"

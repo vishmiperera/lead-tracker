@@ -35,6 +35,9 @@ interface LeadsTableProps {
   onSelectLead: (lead: Lead) => void;
   onBatchStatusChange?: (ids: string[], newStatus: LeadStatus) => void;
   onBatchDelete?: (ids: string[]) => void;
+  assignees?: string[];
+  onAssigneeChange?: (id: string, newAssignee: string) => void;
+  onBatchAssign?: (ids: string[], assignee: string) => void;
 }
 
 export function LeadsTable({
@@ -45,12 +48,18 @@ export function LeadsTable({
   onSelectLead,
   onBatchStatusChange,
   onBatchDelete,
+  assignees = [],
+  onAssigneeChange,
+  onBatchAssign,
 }: LeadsTableProps) {
   // Filters state
   const [selectedStatus, setSelectedStatus] = useState<string>("All Statuses");
   const [selectedSource, setSelectedSource] = useState<string>("All Sources");
   const [selectedCampaign, setSelectedCampaign] = useState<string>("All Campaigns");
-  const [dateFilter, setDateFilter] = useState<"all" | "today" | "7days" | "30days">("all");
+  const [selectedAssignee, setSelectedAssignee] = useState<string>("All Assignees");
+  const [dateFilter, setDateFilter] = useState<"all" | "today" | "7days" | "30days" | "custom">("all");
+  const [customStartDate, setCustomStartDate] = useState<string>("");
+  const [customEndDate, setCustomEndDate] = useState<string>("");
 
   // Selection state
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -67,14 +76,15 @@ export function LeadsTable({
   const filteredLeads = useMemo(() => {
     return leads
       .filter((lead) => {
-        // Search query filter (Name, Phone, Campaign, Message)
+        // Search query filter (Name, Phone, Campaign, Message, Assignee)
         if (searchQuery.trim()) {
           const q = searchQuery.toLowerCase();
           const matchName = lead.name.toLowerCase().includes(q);
           const matchPhone = lead.phone.toLowerCase().includes(q);
           const matchCampaign = lead.campaign.toLowerCase().includes(q);
           const matchMessage = lead.message.toLowerCase().includes(q);
-          if (!matchName && !matchPhone && !matchCampaign && !matchMessage) {
+          const matchAssignee = (lead.assignee || "").toLowerCase().includes(q);
+          if (!matchName && !matchPhone && !matchCampaign && !matchMessage && !matchAssignee) {
             return false;
           }
         }
@@ -94,6 +104,15 @@ export function LeadsTable({
           return false;
         }
 
+        // Assignee filter
+        if (selectedAssignee !== "All Assignees") {
+          if (selectedAssignee === "Unassigned") {
+            if (lead.assignee && lead.assignee.trim()) return false;
+          } else if (lead.assignee !== selectedAssignee) {
+            return false;
+          }
+        }
+
         // Date filter
         if (dateFilter !== "all") {
           const leadDate = new Date(lead.created_at).getTime();
@@ -106,6 +125,17 @@ export function LeadsTable({
             if (now - leadDate > 7 * 24 * 60 * 60 * 1000) return false;
           } else if (dateFilter === "30days") {
             if (now - leadDate > 30 * 24 * 60 * 60 * 1000) return false;
+          } else if (dateFilter === "custom") {
+            if (customStartDate) {
+              const start = new Date(customStartDate);
+              start.setHours(0, 0, 0, 0);
+              if (leadDate < start.getTime()) return false;
+            }
+            if (customEndDate) {
+              const end = new Date(customEndDate);
+              end.setHours(23, 59, 59, 999);
+              if (leadDate > end.getTime()) return false;
+            }
           }
         }
 
@@ -128,7 +158,10 @@ export function LeadsTable({
     selectedStatus,
     selectedSource,
     selectedCampaign,
+    selectedAssignee,
     dateFilter,
+    customStartDate,
+    customEndDate,
     sortField,
     sortAsc,
   ]);
@@ -249,13 +282,14 @@ export function LeadsTable({
         : filteredLeads;
 
     if (exportData.length === 0) return;
-    const headers = ["ID", "Created At", "Name", "Phone", "Status", "Source", "Campaign", "Message", "Notes"];
+    const headers = ["ID", "Created At", "Name", "Phone", "Status", "Assignee", "Source", "Campaign", "Message", "Notes"];
     const rows = exportData.map((l) => [
       l.id,
       l.created_at,
       `"${l.name.replace(/"/g, '""')}"`,
       `"${l.phone}"`,
       l.lead_status,
+      `"${(l.assignee || "Unassigned").replace(/"/g, '""')}"`,
       l.source,
       `"${l.campaign.replace(/"/g, '""')}"`,
       `"${l.message.replace(/"/g, '""')}"`,
@@ -279,9 +313,13 @@ export function LeadsTable({
     setSelectedStatus("All Statuses");
     setSelectedSource("All Sources");
     setSelectedCampaign("All Campaigns");
+    setSelectedAssignee("All Assignees");
     setDateFilter("all");
+    setCustomStartDate("");
+    setCustomEndDate("");
     onSearchChange("");
     setSelectedIds([]);
+    setCurrentPage(1);
   };
 
   const hasActiveFilters =
@@ -289,7 +327,10 @@ export function LeadsTable({
     selectedStatus !== "All Statuses" ||
     selectedSource !== "All Sources" ||
     selectedCampaign !== "All Campaigns" ||
-    dateFilter !== "all";
+    selectedAssignee !== "All Assignees" ||
+    dateFilter !== "all" ||
+    customStartDate !== "" ||
+    customEndDate !== "";
 
   return (
     <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl shadow-soft overflow-hidden">
@@ -342,7 +383,7 @@ export function LeadsTable({
             <span className="text-xs font-bold text-[#0284C7] dark:text-[#2EA3E6]">
               {selectedIds.length} lead{selectedIds.length > 1 ? "s" : ""} selected
             </span>
-            <div className="flex items-center space-x-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs text-slate-500 dark:text-slate-400">Mark as:</span>
               <button
                 onClick={() => {
@@ -371,6 +412,32 @@ export function LeadsTable({
               >
                 Closed
               </button>
+
+              {/* Batch Assignee Dropdown */}
+              {assignees.length > 0 && (
+                <div className="flex items-center gap-1 pl-2 border-l border-slate-300 dark:border-slate-700">
+                  <span className="text-xs text-slate-500 dark:text-slate-400">Assign to:</span>
+                  <select
+                    defaultValue=""
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        const targetAssignee = e.target.value === "Unassigned" ? "" : e.target.value;
+                        onBatchAssign?.(selectedIds, targetAssignee);
+                        setSelectedIds([]);
+                        e.target.value = "";
+                      }
+                    }}
+                    className="text-xs py-1 px-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-[#2EA3E6]"
+                  >
+                    <option value="" disabled>Choose member...</option>
+                    <option value="Unassigned">Unassigned</option>
+                    {assignees.map((a) => (
+                      <option key={a} value={a}>👤 {a}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <button
                 onClick={() => {
                   if (confirm(`Delete ${selectedIds.length} selected leads?`)) {
@@ -378,7 +445,7 @@ export function LeadsTable({
                     setSelectedIds([]);
                   }
                 }}
-                className="p-1.5 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition"
+                className="p-1.5 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition ml-1"
                 title="Delete Selected Leads"
               >
                 <Trash2 className="w-4 h-4" />
@@ -388,7 +455,7 @@ export function LeadsTable({
         )}
 
         {/* Filter Toolbar */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5 pt-1">
           {/* Status Filter */}
           <div>
             <label className="block text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
@@ -405,6 +472,29 @@ export function LeadsTable({
               {STATUS_OPTIONS.map((st) => (
                 <option key={st} value={st}>
                   {st}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Assignee Filter */}
+          <div>
+            <label className="block text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+              Assignee
+            </label>
+            <select
+              value={selectedAssignee}
+              onChange={(e) => {
+                setSelectedAssignee(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/70 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-[#2EA3E6]"
+            >
+              <option value="All Assignees">All Assignees</option>
+              <option value="Unassigned">👤 Unassigned</option>
+              {assignees.map((person) => (
+                <option key={person} value={person}>
+                  👤 {person}
                 </option>
               ))}
             </select>
@@ -464,6 +554,7 @@ export function LeadsTable({
                   { key: "today", label: "Today" },
                   { key: "7days", label: "7D" },
                   { key: "30days", label: "30D" },
+                  { key: "custom", label: "Custom" },
                 ] as const
               ).map((tab) => (
                 <button
@@ -485,6 +576,51 @@ export function LeadsTable({
             </div>
           </div>
         </div>
+
+        {/* Custom Date Range Picker (Visible when "Custom" is selected) */}
+        {dateFilter === "custom" && (
+          <div className="flex flex-wrap items-center gap-3 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 animate-in fade-in duration-150">
+            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+              <Calendar className="w-3.5 h-3.5 text-[#2EA3E6]" /> Custom Date Range:
+            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-500">From:</span>
+              <input
+                type="date"
+                value={customStartDate}
+                onChange={(e) => {
+                  setCustomStartDate(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="px-2.5 py-1 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-[#2EA3E6]"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-500">To:</span>
+              <input
+                type="date"
+                value={customEndDate}
+                onChange={(e) => {
+                  setCustomEndDate(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="px-2.5 py-1 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-[#2EA3E6]"
+              />
+            </div>
+            {(customStartDate || customEndDate) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setCustomStartDate("");
+                  setCustomEndDate("");
+                }}
+                className="text-xs text-rose-500 hover:underline font-semibold ml-auto"
+              >
+                Clear Range
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Main Table Content */}
@@ -539,6 +675,7 @@ export function LeadsTable({
               </th>
               <th className="py-3 px-3 min-w-[140px]">Phone Number</th>
               <th className="py-3 px-3 min-w-[130px]">Status</th>
+              <th className="py-3 px-3 min-w-[140px]">Assignee</th>
               <th className="py-3 px-3 min-w-[110px]">Source</th>
               <th className="py-3 px-3 min-w-[170px]">Campaign</th>
               <th className="py-3 px-3 min-w-[210px]">Message / Inquiry</th>
@@ -548,7 +685,7 @@ export function LeadsTable({
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
             {paginatedLeads.length === 0 ? (
               <tr>
-                <td colSpan={9} className="py-12 text-center">
+                <td colSpan={10} className="py-12 text-center">
                   <div className="max-w-xs mx-auto text-center space-y-2">
                     <p className="font-semibold text-slate-700 dark:text-slate-300">
                       No matching leads found
@@ -659,7 +796,38 @@ export function LeadsTable({
                       </div>
                     </td>
 
-                    {/* 5. Source */}
+                    {/* 5. Assignee Dropdown selector */}
+                    <td
+                      className="py-3.5 px-3 whitespace-nowrap"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="relative inline-block">
+                        <select
+                          value={lead.assignee || "Unassigned"}
+                          onChange={(e) => {
+                            const val = e.target.value === "Unassigned" ? "" : e.target.value;
+                            onAssigneeChange?.(lead.id, val);
+                          }}
+                          className={`text-xs font-semibold px-2.5 py-1 rounded-full border appearance-none pr-6 cursor-pointer focus:outline-none transition ${
+                            lead.assignee
+                              ? "bg-[#2EA3E6]/10 border-[#2EA3E6]/30 text-[#0284C7] dark:text-[#2EA3E6]"
+                              : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400"
+                          }`}
+                        >
+                          <option value="Unassigned">👤 Unassigned</option>
+                          {assignees.map((person) => (
+                            <option key={person} value={person}>
+                              👤 {person}
+                            </option>
+                          ))}
+                        </select>
+                        <span className="absolute right-2 top-2 pointer-events-none text-current text-[10px]">
+                          ▼
+                        </span>
+                      </div>
+                    </td>
+
+                    {/* 6. Source */}
                     <td className="py-3.5 px-3 whitespace-nowrap">
                       <span
                         className={`inline-block text-[11px] font-semibold px-2 py-0.5 rounded-md border ${sourceInfo.badgeBg}`}

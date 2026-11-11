@@ -10,6 +10,7 @@ import { LeadDetailModal } from "@/components/LeadDetailModal";
 import { NewLeadModal } from "@/components/NewLeadModal";
 import { MetaWebhookTesterModal } from "@/components/MetaWebhookTesterModal";
 import { SetupGuideModal } from "@/components/SetupGuideModal";
+import { ManageAssigneesModal } from "@/components/ManageAssigneesModal";
 import {
   fetchAllLeads,
   updateLeadStatus,
@@ -18,9 +19,12 @@ import {
   deleteLeadRecord,
   batchUpdateLeadStatus,
   batchDeleteLeads,
+  updateLeadAssignee,
+  batchUpdateLeadAssignee,
   subscribeToLeadsChanges,
   supabase,
 } from "@/lib/supabase";
+import { getStoredAssignees, saveStoredAssignees } from "@/lib/assignees";
 import { Lead, LeadStatus } from "@/types";
 import { CheckCircle, Sparkles, BookOpen, Table, Columns } from "lucide-react";
 
@@ -38,6 +42,78 @@ export default function DashboardPage() {
   const [isNewLeadOpen, setIsNewLeadOpen] = useState(false);
   const [isWebhookTesterOpen, setIsWebhookTesterOpen] = useState(false);
   const [isSetupGuideOpen, setIsSetupGuideOpen] = useState(false);
+  const [isManageAssigneesOpen, setIsManageAssigneesOpen] = useState(false);
+
+  // Assignees state
+  const [assignees, setAssignees] = useState<string[]>([]);
+
+  useEffect(() => {
+    setAssignees(getStoredAssignees());
+  }, []);
+
+  // Assignee Management Handlers
+  const handleAddAssignee = (name: string) => {
+    const updated = [...assignees, name];
+    setAssignees(updated);
+    saveStoredAssignees(updated);
+    setNoticeMessage(`Added team member "${name}"`);
+    setTimeout(() => setNoticeMessage(null), 3000);
+  };
+
+  const handleUpdateAssignee = (oldName: string, newName: string) => {
+    const updated = assignees.map((a) => (a === oldName ? newName : a));
+    setAssignees(updated);
+    saveStoredAssignees(updated);
+    setLeads((prev) =>
+      prev.map((l) => (l.assignee === oldName ? { ...l, assignee: newName } : l))
+    );
+    setNoticeMessage(`Renamed team member to "${newName}"`);
+    setTimeout(() => setNoticeMessage(null), 3000);
+  };
+
+  const handleDeleteAssignee = (name: string) => {
+    const updated = assignees.filter((a) => a !== name);
+    setAssignees(updated);
+    saveStoredAssignees(updated);
+    setLeads((prev) =>
+      prev.map((l) => (l.assignee === name ? { ...l, assignee: undefined } : l))
+    );
+    setNoticeMessage(`Removed team member "${name}"`);
+    setTimeout(() => setNoticeMessage(null), 3000);
+  };
+
+  // Handle single lead assignee change
+  const handleAssigneeChange = async (id: string, newAssignee: string) => {
+    setLeads((prev) =>
+      prev.map((l) => (l.id === id ? { ...l, assignee: newAssignee || undefined } : l))
+    );
+    if (selectedLead && selectedLead.id === id) {
+      setSelectedLead((prev) =>
+        prev ? { ...prev, assignee: newAssignee || undefined } : null
+      );
+    }
+    await updateLeadAssignee(id, newAssignee);
+    setNoticeMessage(
+      newAssignee ? `Lead assigned to ${newAssignee}` : "Lead unassigned"
+    );
+    setTimeout(() => setNoticeMessage(null), 2500);
+  };
+
+  // Handle batch assignee change
+  const handleBatchAssign = async (ids: string[], newAssignee: string) => {
+    setLeads((prev) =>
+      prev.map((l) =>
+        ids.includes(l.id) ? { ...l, assignee: newAssignee || undefined } : l
+      )
+    );
+    await batchUpdateLeadAssignee(ids, newAssignee);
+    setNoticeMessage(
+      newAssignee
+        ? `Assigned ${ids.length} leads to ${newAssignee}`
+        : `Unassigned ${ids.length} leads`
+    );
+    setTimeout(() => setNoticeMessage(null), 3000);
+  };
 
   // Load leads from Supabase or fallback
   const loadLeads = useCallback(async (showToast = false) => {
@@ -147,6 +223,8 @@ export default function DashboardPage() {
         onOpenNewLead={() => setIsNewLeadOpen(true)}
         onOpenWebhookTester={() => setIsWebhookTesterOpen(true)}
         onOpenSetupGuide={() => setIsSetupGuideOpen(true)}
+        onOpenManageAssignees={() => setIsManageAssigneesOpen(true)}
+        assigneesCount={assignees.length}
         totalLeadsCount={leads.length}
       />
 
@@ -256,12 +334,17 @@ export default function DashboardPage() {
               onSelectLead={(lead) => setSelectedLead(lead)}
               onBatchStatusChange={handleBatchStatusChange}
               onBatchDelete={handleBatchDelete}
+              assignees={assignees}
+              onAssigneeChange={handleAssigneeChange}
+              onBatchAssign={handleBatchAssign}
             />
           ) : (
             <LeadsKanban
               leads={leads}
               onSelectLead={(lead) => setSelectedLead(lead)}
               onStatusChange={handleStatusChange}
+              assignees={assignees}
+              onAssigneeChange={handleAssigneeChange}
             />
           )}
         </div>
@@ -292,6 +375,8 @@ export default function DashboardPage() {
         onStatusChange={handleStatusChange}
         onSaveNotes={handleSaveNotes}
         onDeleteLead={handleDeleteLead}
+        assignees={assignees}
+        onAssigneeChange={handleAssigneeChange}
       />
 
       {/* New Manual Lead Modal */}
@@ -299,6 +384,7 @@ export default function DashboardPage() {
         isOpen={isNewLeadOpen}
         onClose={() => setIsNewLeadOpen(false)}
         onSubmit={handleCreateLead}
+        assignees={assignees}
       />
 
       {/* Meta Webhook Simulator Modal */}
@@ -312,6 +398,17 @@ export default function DashboardPage() {
       <SetupGuideModal
         isOpen={isSetupGuideOpen}
         onClose={() => setIsSetupGuideOpen(false)}
+      />
+
+      {/* Manage Assignees Modal */}
+      <ManageAssigneesModal
+        isOpen={isManageAssigneesOpen}
+        onClose={() => setIsManageAssigneesOpen(false)}
+        assignees={assignees}
+        leads={leads}
+        onAddAssignee={handleAddAssignee}
+        onUpdateAssignee={handleUpdateAssignee}
+        onDeleteAssignee={handleDeleteAssignee}
       />
     </div>
   );

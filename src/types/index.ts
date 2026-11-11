@@ -14,6 +14,7 @@ export interface Lead {
   notes?: string;
   ad_id?: string;
   venue_interest?: string;
+  assignee?: string;
 }
 
 export interface KpiMetrics {
@@ -32,6 +33,9 @@ export interface FilterOptions {
   status: string; // 'All' | LeadStatus
   source: string; // 'All' | LeadSource
   campaign: string; // 'All' | string
-  dateRange: 'all' | 'today' | '7days' | '30days';
+  assignee: string; // 'All' | string
+  dateRange: 'all' | 'today' | '7days' | '30days' | 'custom';
+  startDate?: string; // 'YYYY-MM-DD'
+  endDate?: string; // 'YYYY-MM-DD'
 }
 

@@ -9,13 +9,15 @@ interface NewLeadModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (lead: Omit<Lead, "id" | "created_at">) => void;
+  assignees?: string[];
 }
 
-export function NewLeadModal({ isOpen, onClose, onSubmit }: NewLeadModalProps) {
+export function NewLeadModal({ isOpen, onClose, onSubmit, assignees = [] }: NewLeadModalProps) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("+94");
   const [source, setSource] = useState<LeadSource>("Facebook");
   const [campaign, setCampaign] = useState(CAMPAIGN_OPTIONS[1] || "General Inquiries");
+  const [assignee, setAssignee] = useState("");
   const [venueInterest, setVenueInterest] = useState("");
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState<LeadStatus>("New");
@@ -36,6 +38,7 @@ export function NewLeadModal({ isOpen, onClose, onSubmit }: NewLeadModalProps) {
       phone: phone.trim(),
       source,
       campaign,
+      assignee: assignee || undefined,
       venue_interest: venueInterest.trim() || undefined,
       message: message.trim(),
       lead_status: status,
@@ -47,6 +50,7 @@ export function NewLeadModal({ isOpen, onClose, onSubmit }: NewLeadModalProps) {
     // reset form
     setName("");
     setPhone("+94");
+    setAssignee("");
     setMessage("");
     setVenueInterest("");
   };
@@ -157,6 +161,24 @@ export function NewLeadModal({ isOpen, onClose, onSubmit }: NewLeadModalProps) {
               {CAMPAIGN_OPTIONS.filter((c) => c !== "All Campaigns").map((c) => (
                 <option key={c} value={c}>
                   {c}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Assignee (Team Member)
+            </label>
+            <select
+              value={assignee}
+              onChange={(e) => setAssignee(e.target.value)}
+              className="w-full px-3 py-2 text-xs sm:text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#2EA3E6]"
+            >
+              <option value="">Unassigned</option>
+              {assignees.map((person) => (
+                <option key={person} value={person}>
+                  👤 {person}
                 </option>
               ))}
             </select>

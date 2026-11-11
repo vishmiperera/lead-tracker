@@ -13,6 +13,7 @@ import {
   Building2,
   BookOpen,
   Smartphone,
+  Users,
 } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "./ThemeToggle";
@@ -27,6 +28,8 @@ interface TopBarProps {
   onOpenNewLead: () => void;
   onOpenWebhookTester: () => void;
   onOpenSetupGuide?: () => void;
+  onOpenManageAssignees?: () => void;
+  assigneesCount?: number;
   totalLeadsCount: number;
 }
 
@@ -39,6 +42,8 @@ export function TopBar({
   onOpenNewLead,
   onOpenWebhookTester,
   onOpenSetupGuide,
+  onOpenManageAssignees,
+  assigneesCount,
   totalLeadsCount,
 }: TopBarProps) {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
@@ -116,6 +121,23 @@ export function TopBar({
 
             {/* Right: Actions, Theme Toggle, Admin Pill */}
             <div className="flex items-center space-x-2 sm:space-x-3 shrink-0">
+              {/* Manage Assignees Button */}
+              {onOpenManageAssignees && (
+                <button
+                  onClick={onOpenManageAssignees}
+                  title="Manage Team Assignees"
+                  className="flex items-center space-x-1.5 px-3 py-1.5 text-xs font-semibold rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-[#2EA3E6]/50 text-slate-700 dark:text-slate-300 shadow-sm transition"
+                >
+                  <Users className="w-3.5 h-3.5 text-[#2EA3E6]" />
+                  <span>Assignees</span>
+                  {assigneesCount !== undefined && (
+                    <span className="px-1.5 py-0.5 rounded-full bg-[#2EA3E6]/10 text-[#0284C7] dark:text-[#2EA3E6] text-[10px] font-bold">
+                      {assigneesCount}
+                    </span>
+                  )}
+                </button>
+              )}
+
               {/* Setup Guide Button */}
               {onOpenSetupGuide && (
                 <button

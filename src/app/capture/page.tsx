@@ -40,6 +40,7 @@ export default function MobileQuickCapturePage() {
       phone: phone.trim(),
       source,
       campaign,
+      assignee: assignedRep.trim() || undefined,
       venue_interest: venueInterest.trim() || undefined,
       message: message.trim(),
       lead_status: "New" as const,
