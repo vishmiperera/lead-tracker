@@ -31,27 +31,27 @@ CREATE INDEX IF NOT EXISTS idx_leads_phone ON public.meta_whatsapp_leads (phone)
 -- 4. Enable Row Level Security (RLS)
 ALTER TABLE public.meta_whatsapp_leads ENABLE ROW LEVEL SECURITY;
 
--- 5. Policies
--- Allow read access for authenticated and anonymous users with API key
+-- 5. Policies (Drop first so re-running never throws "already exists" errors)
+DROP POLICY IF EXISTS "Allow public read access" ON public.meta_whatsapp_leads;
 CREATE POLICY "Allow public read access"
 ON public.meta_whatsapp_leads
 FOR SELECT
 USING (true);
 
--- Allow insert access (e.g. from Meta Webhook and Admin UI)
+DROP POLICY IF EXISTS "Allow public insert access" ON public.meta_whatsapp_leads;
 CREATE POLICY "Allow public insert access"
 ON public.meta_whatsapp_leads
 FOR INSERT
 WITH CHECK (true);
 
--- Allow update access (e.g. changing status or adding notes)
+DROP POLICY IF EXISTS "Allow public update access" ON public.meta_whatsapp_leads;
 CREATE POLICY "Allow public update access"
 ON public.meta_whatsapp_leads
 FOR UPDATE
 USING (true)
 WITH CHECK (true);
 
--- Allow delete access (e.g. archiving/cleaning spam leads)
+DROP POLICY IF EXISTS "Allow public delete access" ON public.meta_whatsapp_leads;
 CREATE POLICY "Allow public delete access"
 ON public.meta_whatsapp_leads
 FOR DELETE
