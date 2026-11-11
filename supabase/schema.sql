@@ -57,16 +57,9 @@ ON public.meta_whatsapp_leads
 FOR DELETE
 USING (true);
 
--- 6. Seed Sample Data (Optional realistic inquiries for MillionSpaces)
-INSERT INTO public.meta_whatsapp_leads (id, created_at, name, phone, lead_status, source, campaign, message, venue_interest, ad_id, notes)
-VALUES
-  (gen_random_uuid(), now() - INTERVAL '15 minutes', 'Dinuk Weerasinghe', '+94772189401', 'New', 'Instagram', 'Q4 Corporate Event Venues - Colombo', 'Hi MillionSpaces team! We are planning an annual leadership summit for 65 delegates in early December. Need a high-end boardroom setup with catering near Colombo 03.', 'Luxury Boardroom & Summit Hall', 'meta_ad_88392101', 'Requires AV projector and buffet lunch.'),
-  (gen_random_uuid(), now() - INTERVAL '45 minutes', 'Shanika Perera', '+94718392019', 'New', 'Facebook', 'Festive Season Banquet & Rooftop Bookings', 'Hello, looking for a scenic rooftop terrace venue for an engagement dinner of around 80 guests on Saturday, Dec 21st. Is outside decor allowed?', 'Rooftop Terrace Lounge', 'meta_ad_99201844', NULL),
-  (gen_random_uuid(), now() - INTERVAL '2 hours', 'Akeel Mohamed', '+94769018432', 'Contacted', 'Instagram', 'Startups Co-Working & Dedicated Desks', 'Saw your Meta ad for flexible team desks. Our fintech startup has 6 developers needing dedicated desks with 24/7 access.', 'Hatch / Orion City Dedicated Pod', 'meta_ad_44019288', 'Followed up via WhatsApp. Tour scheduled.'),
-  (gen_random_uuid(), now() - INTERVAL '4 hours', 'Dr. Kanishka Fernando', '+94773449012', 'Qualified', 'Facebook', 'High-End Boardroom & Meeting Pods', 'Good day, I need a quiet 14-seater executive meeting room for a full-day medical advisory board meeting this coming Thursday.', 'World Trade Center Executive Suite', 'meta_ad_77209144', 'Quote sent for Cinnamon Lakeside Boardroom.'),
-  (gen_random_uuid(), now() - INTERVAL '6 hours', 'Nethmi Jayasuriya', '+94703928172', 'New', 'WhatsApp Direct', 'Creative Studio & Photo Shoot Spaces', 'Hey! Inquiring about renting a daylight photography studio with backdrops for a brand apparel shoot next Tuesday from 9 AM to 4 PM.', 'Studio 44 Daylight Studio', 'meta_ad_33091823', NULL),
-  (gen_random_uuid(), now() - INTERVAL '14 hours', 'Rohan De Silva', '+94771928374', 'Contacted', 'Facebook', 'Q4 Corporate Event Venues - Colombo', 'Can you provide quotation for renting the Waters Edge Grand Banquet lawn for a tech product launch with 200 attendees?', 'Waters Edge Grand Lawn', 'meta_ad_88392101', 'Sent proposal PDF via WhatsApp.'),
-  (gen_random_uuid(), now() - INTERVAL '22 hours', 'Tanya Senanayake', '+94715562091', 'Closed', 'Instagram', 'Festive Season Banquet & Rooftop Bookings', 'Booking confirmed! Paid 50% advance for the Galle Face terrace cocktail event on Dec 14th.', 'Galle Face Terrace Suite', 'meta_ad_99201844', 'Deal closed. Advance receipt issued.'),
-  (gen_random_uuid(), now() - INTERVAL '1 day', 'Marcus Tan', '+6591283741', 'Qualified', 'Facebook', 'High-End Boardroom & Meeting Pods', 'Hi, I am visiting Colombo from Singapore next week for investor meetings. Need an executive boardroom at One Galle Face for 2 consecutive days.', 'Shangri-La / OGF Executive Room', 'meta_ad_77209144', 'High value foreign lead.')
-ON CONFLICT DO NOTHING;
+-- ============================================================
+-- NOTE: The table is now clean and empty, waiting for live Meta leads!
+-- Real inbound leads from Facebook & Instagram Click-to-WhatsApp ads
+-- will automatically be inserted here by the /api/meta-webhook endpoint.
+-- ============================================================
 
