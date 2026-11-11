@@ -6,10 +6,7 @@ import {
   RotateCw,
   Plus,
   Sparkles,
-  Database,
-  Radio,
   ChevronDown,
-  Building2,
   BookOpen,
   Smartphone,
   Users,
@@ -111,32 +108,15 @@ export function TopBar({
       >
         <div className="max-w-[1560px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between gap-3 sm:gap-4">
-            {/* Left: Brand Identity with Live API status */}
-            <div className="flex items-center space-x-3 shrink-0">
-              <Link href="/" className="flex items-center space-x-3 group">
-                <div className="relative flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-[#2EA3E6] via-[#00A3E8] to-[#258bc5] text-white shadow-md shadow-[#2EA3E6]/25 group-hover:scale-105 transition-transform duration-200">
-                  <Building2 className="w-5 h-5" />
-                  <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FF2E63] opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#FF2E63]"></span>
-                  </span>
-                </div>
-                <div className="flex flex-col">
-                  <div className="flex items-center space-x-2">
-                    <span className="font-extrabold text-base sm:text-lg tracking-tight text-slate-900 dark:text-white leading-tight">
-                      Million<span className="text-[#2EA3E6]">Spaces</span>
-                    </span>
-                    <span className="hidden sm:inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700/60">
-                      Leads Hub
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-2 text-[11px] text-slate-400 dark:text-slate-500">
-                    <span className="inline-flex items-center gap-1 font-medium">
-                      <span className={`w-1.5 h-1.5 rounded-full ${isLiveSupabase ? "bg-emerald-500 animate-pulse" : "bg-amber-400"}`} />
-                      {isLiveSupabase ? "Meta WhatsApp Live" : "Demo Workspace"}
-                    </span>
-                  </div>
-                </div>
+            {/* Left: Brand Identity (MillionSpaces Logo) */}
+            <div className="flex items-center shrink-0">
+              <Link href="/" className="flex items-center group py-0.5" title="MillionSpaces">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/millionspaces-logo.png"
+                  alt="MillionSpaces"
+                  className="h-8 sm:h-9 w-auto object-contain transition-transform duration-200 group-hover:scale-105 dark:brightness-125 dark:drop-shadow-[0_1px_3px_rgba(255,255,255,0.12)]"
+                />
               </Link>
             </div>
 
