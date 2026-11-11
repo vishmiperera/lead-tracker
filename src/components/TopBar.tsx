@@ -12,7 +12,9 @@ import {
   ChevronDown,
   Building2,
   BookOpen,
+  Smartphone,
 } from "lucide-react";
+import Link from "next/link";
 import { ThemeToggle } from "./ThemeToggle";
 import { AuthModal } from "./AuthModal";
 
@@ -150,6 +152,16 @@ export function TopBar({
 
               {/* Theme Toggle */}
               <ThemeToggle />
+
+              {/* Quick Capture for Sales Reps */}
+              <Link
+                href="/capture"
+                title="Mobile Quick Lead Capture for Reps"
+                className="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 text-xs font-semibold rounded-full border border-[#2EA3E6]/30 bg-[#2EA3E6]/10 text-[#2EA3E6] hover:bg-[#2EA3E6]/20 transition"
+              >
+                <Smartphone className="w-3.5 h-3.5" />
+                <span>Quick Capture</span>
+              </Link>
 
               {/* Add New Lead CTA (MillionSpaces Hot Pink Accent #FF2E63) */}
               <button
