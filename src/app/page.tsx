@@ -8,16 +8,20 @@ import { LeadsTable } from "@/components/LeadsTable";
 import { LeadDetailModal } from "@/components/LeadDetailModal";
 import { NewLeadModal } from "@/components/NewLeadModal";
 import { MetaWebhookTesterModal } from "@/components/MetaWebhookTesterModal";
+import { SetupGuideModal } from "@/components/SetupGuideModal";
 import {
   fetchAllLeads,
   updateLeadStatus,
   updateLeadNotes,
   createNewLead,
   deleteLeadRecord,
-  isSupabaseConfigured,
+  batchUpdateLeadStatus,
+  batchDeleteLeads,
+  subscribeToLeadsChanges,
+  supabase,
 } from "@/lib/supabase";
 import { Lead, LeadStatus } from "@/types";
-import { AlertCircle, CheckCircle, Database, Sparkles, MessageCircle, ExternalLink } from "lucide-react";
+import { CheckCircle, Sparkles, BookOpen } from "lucide-react";
 
 export default function DashboardPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -31,6 +35,7 @@ export default function DashboardPage() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [isNewLeadOpen, setIsNewLeadOpen] = useState(false);
   const [isWebhookTesterOpen, setIsWebhookTesterOpen] = useState(false);
+  const [isSetupGuideOpen, setIsSetupGuideOpen] = useState(false);
 
   // Load leads from Supabase or fallback
   const loadLeads = useCallback(async (showToast = false) => {
@@ -58,11 +63,21 @@ export default function DashboardPage() {
 
   useEffect(() => {
     loadLeads();
+
+    // Subscribe to Supabase real-time updates if connected
+    const channel = subscribeToLeadsChanges(() => {
+      loadLeads();
+    });
+
+    return () => {
+      if (channel && supabase) {
+        supabase.removeChannel(channel);
+      }
+    };
   }, [loadLeads]);
 
   // Handle inline or modal status change
   const handleStatusChange = async (id: string, newStatus: LeadStatus) => {
-    // Optimistic UI update
     setLeads((prev) =>
       prev.map((l) => (l.id === id ? { ...l, lead_status: newStatus } : l))
     );
@@ -70,6 +85,24 @@ export default function DashboardPage() {
       setSelectedLead((prev) => (prev ? { ...prev, lead_status: newStatus } : null));
     }
     await updateLeadStatus(id, newStatus);
+  };
+
+  // Handle batch status change
+  const handleBatchStatusChange = async (ids: string[], newStatus: LeadStatus) => {
+    setLeads((prev) =>
+      prev.map((l) => (ids.includes(l.id) ? { ...l, lead_status: newStatus } : l))
+    );
+    await batchUpdateLeadStatus(ids, newStatus);
+    setNoticeMessage(`Updated ${ids.length} leads to ${newStatus}`);
+    setTimeout(() => setNoticeMessage(null), 3000);
+  };
+
+  // Handle batch delete
+  const handleBatchDelete = async (ids: string[]) => {
+    setLeads((prev) => prev.filter((l) => !ids.includes(l.id)));
+    await batchDeleteLeads(ids);
+    setNoticeMessage(`Deleted ${ids.length} leads`);
+    setTimeout(() => setNoticeMessage(null), 3000);
   };
 
   // Handle notes update
@@ -111,6 +144,7 @@ export default function DashboardPage() {
         isLiveSupabase={isLiveSupabase}
         onOpenNewLead={() => setIsNewLeadOpen(true)}
         onOpenWebhookTester={() => setIsWebhookTesterOpen(true)}
+        onOpenSetupGuide={() => setIsSetupGuideOpen(true)}
         totalLeadsCount={leads.length}
       />
 
@@ -145,7 +179,7 @@ export default function DashboardPage() {
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                 {isLiveSupabase
-                  ? "Connected to live Supabase database table (public.meta_whatsapp_leads). Inbound leads sync automatically."
+                  ? "Connected to live Supabase database (public.meta_whatsapp_leads). Inbound leads sync automatically with real-time updates."
                   : "Running in interactive demo state with preloaded venue inquiries. Changes persist to local storage. Connect Supabase keys in .env.local anytime."}
               </p>
             </div>
@@ -153,11 +187,19 @@ export default function DashboardPage() {
 
           <div className="flex items-center space-x-2 shrink-0">
             <button
+              onClick={() => setIsSetupGuideOpen(true)}
+              className="px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition flex items-center space-x-1"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-slate-400" />
+              <span>Setup Guide</span>
+            </button>
+
+            <button
               onClick={() => setIsWebhookTesterOpen(true)}
               className="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-[#2EA3E6]/10 hover:bg-[#2EA3E6]/20 text-[#0284C7] dark:text-[#2EA3E6] border border-[#2EA3E6]/30 flex items-center space-x-1.5 transition"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Simulate Webhook POST</span>
+              <span>Simulate Webhook</span>
             </button>
           </div>
         </div>
@@ -175,6 +217,8 @@ export default function DashboardPage() {
           onSearchChange={setSearchQuery}
           onStatusChange={handleStatusChange}
           onSelectLead={(lead) => setSelectedLead(lead)}
+          onBatchStatusChange={handleBatchStatusChange}
+          onBatchDelete={handleBatchDelete}
         />
       </main>
 
@@ -217,6 +261,12 @@ export default function DashboardPage() {
         isOpen={isWebhookTesterOpen}
         onClose={() => setIsWebhookTesterOpen(false)}
         onLeadAdded={() => loadLeads(true)}
+      />
+
+      {/* Setup Guide Modal */}
+      <SetupGuideModal
+        isOpen={isSetupGuideOpen}
+        onClose={() => setIsSetupGuideOpen(false)}
       />
     </div>
   );

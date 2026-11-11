@@ -13,8 +13,10 @@ import {
   Pie,
   Cell,
   Legend,
+  AreaChart,
+  Area,
 } from "recharts";
-import { BarChart3, PieChart as PieIcon, Layers } from "lucide-react";
+import { BarChart3, PieChart as PieIcon, TrendingUp } from "lucide-react";
 import { Lead } from "@/types";
 
 interface AnalyticsChartsProps {
@@ -25,10 +27,10 @@ interface AnalyticsChartsProps {
 const COLOR_PRIMARY_BLUE = "#2EA3E6";
 const COLOR_HOT_PINK = "#FF2E63";
 const COLOR_EMERALD = "#10B981";
-const COLOR_AMBER = "#F59E0B";
 
 export function AnalyticsCharts({ leads }: AnalyticsChartsProps) {
   const [isMounted, setIsMounted] = useState(false);
+  const [activeTab, setActiveTab] = useState<"campaign" | "velocity">("campaign");
 
   useEffect(() => {
     setIsMounted(true);
@@ -76,6 +78,27 @@ export function AnalyticsCharts({ leads }: AnalyticsChartsProps) {
 
   const totalSourceLeads = sourceChartData.reduce((acc, curr) => acc + curr.value, 0);
 
+  // 3. Daily Inflow Velocity (Past 7 Days)
+  const daysMap: Record<string, number> = {};
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
+    const dayLabel = d.toLocaleDateString("en-US", { weekday: "short", month: "numeric", day: "numeric" });
+    daysMap[dayLabel] = 0;
+  }
+
+  leads.forEach((l) => {
+    const d = new Date(l.created_at);
+    const dayLabel = d.toLocaleDateString("en-US", { weekday: "short", month: "numeric", day: "numeric" });
+    if (daysMap[dayLabel] !== undefined) {
+      daysMap[dayLabel]++;
+    }
+  });
+
+  const velocityChartData = Object.entries(daysMap).map(([day, count]) => ({
+    day,
+    leads: count,
+  }));
+
   if (!isMounted) {
     return (
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
@@ -87,48 +110,135 @@ export function AnalyticsCharts({ leads }: AnalyticsChartsProps) {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
-      {/* Chart 1: Bar Chart - Lead Volume by Campaign */}
+      {/* Chart 1: Bar Chart or Velocity Chart */}
       <div className="lg:col-span-7 p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-soft">
-        <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100 dark:border-slate-800/60">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-2 border-b border-slate-100 dark:border-slate-800/60">
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 rounded-lg bg-[#2EA3E6]/10 flex items-center justify-center text-[#2EA3E6]">
-              <BarChart3 className="w-4 h-4" />
+              {activeTab === "campaign" ? (
+                <BarChart3 className="w-4 h-4" />
+              ) : (
+                <TrendingUp className="w-4 h-4" />
+              )}
             </div>
             <div>
               <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                Lead Volume by Meta Campaign
+                {activeTab === "campaign"
+                  ? "Lead Volume by Meta Campaign"
+                  : "Daily Inbound Lead Velocity"}
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Inbound Click-to-WhatsApp chats per creative campaign
+                {activeTab === "campaign"
+                  ? "Click-to-WhatsApp chats grouped by creative"
+                  : "7-day trend of WhatsApp inquiries"}
               </p>
             </div>
           </div>
-          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-[#2EA3E6]/10 text-[#2EA3E6] border border-[#2EA3E6]/20">
-            {campaignChartData.length} Campaigns Active
-          </span>
+
+          {/* Tab selector */}
+          <div className="flex rounded-lg p-0.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 self-start sm:self-auto">
+            <button
+              type="button"
+              onClick={() => setActiveTab("campaign")}
+              className={`px-3 py-1 text-xs font-semibold rounded-md transition ${
+                activeTab === "campaign"
+                  ? "bg-white dark:bg-slate-700 text-[#2EA3E6] shadow-xs"
+                  : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+              }`}
+            >
+              By Campaign
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("velocity")}
+              className={`px-3 py-1 text-xs font-semibold rounded-md transition ${
+                activeTab === "velocity"
+                  ? "bg-white dark:bg-slate-700 text-[#2EA3E6] shadow-xs"
+                  : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+              }`}
+            >
+              Daily Velocity
+            </button>
+          </div>
         </div>
 
         <div className="h-72 w-full pt-2">
-          {campaignChartData.length === 0 ? (
-            <div className="h-full flex items-center justify-center text-slate-400 text-sm">
-              No campaign data available
-            </div>
+          {activeTab === "campaign" ? (
+            campaignChartData.length === 0 ? (
+              <div className="h-full flex items-center justify-center text-slate-400 text-sm">
+                No campaign data available
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={campaignChartData}
+                  margin={{ top: 10, right: 10, left: -20, bottom: 45 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    vertical={false}
+                    stroke="rgba(148, 163, 184, 0.2)"
+                  />
+                  <XAxis
+                    dataKey="name"
+                    angle={-25}
+                    textAnchor="end"
+                    interval={0}
+                    tick={{ fontSize: 11, fill: "currentColor" }}
+                    className="text-slate-600 dark:text-slate-400 font-medium"
+                  />
+                  <YAxis
+                    allowDecimals={false}
+                    tick={{ fontSize: 11, fill: "currentColor" }}
+                    className="text-slate-600 dark:text-slate-400"
+                  />
+                  <Tooltip
+                    cursor={{ fill: "rgba(46, 163, 230, 0.08)" }}
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        return (
+                          <div className="p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg text-xs">
+                            <p className="font-bold text-slate-900 dark:text-white mb-1">
+                              {payload[0].payload.name}
+                            </p>
+                            <p className="text-[#2EA3E6] font-semibold flex items-center gap-1.5">
+                              <span className="w-2 h-2 rounded-full bg-[#2EA3E6]" />
+                              {payload[0].value} Inbound WhatsApp Leads
+                            </p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Bar
+                    dataKey="leads"
+                    fill={COLOR_PRIMARY_BLUE}
+                    radius={[6, 6, 0, 0]}
+                    maxBarSize={48}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            )
           ) : (
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={campaignChartData}
-                margin={{ top: 10, right: 10, left: -20, bottom: 45 }}
+              <AreaChart
+                data={velocityChartData}
+                margin={{ top: 10, right: 10, left: -20, bottom: 20 }}
               >
+                <defs>
+                  <linearGradient id="velocityGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={COLOR_PRIMARY_BLUE} stopOpacity={0.4} />
+                    <stop offset="95%" stopColor={COLOR_PRIMARY_BLUE} stopOpacity={0.0} />
+                  </linearGradient>
+                </defs>
                 <CartesianGrid
                   strokeDasharray="3 3"
                   vertical={false}
                   stroke="rgba(148, 163, 184, 0.2)"
                 />
                 <XAxis
-                  dataKey="name"
-                  angle={-25}
-                  textAnchor="end"
-                  interval={0}
+                  dataKey="day"
                   tick={{ fontSize: 11, fill: "currentColor" }}
                   className="text-slate-600 dark:text-slate-400 font-medium"
                 />
@@ -138,17 +248,15 @@ export function AnalyticsCharts({ leads }: AnalyticsChartsProps) {
                   className="text-slate-600 dark:text-slate-400"
                 />
                 <Tooltip
-                  cursor={{ fill: "rgba(46, 163, 230, 0.08)" }}
                   content={({ active, payload }) => {
                     if (active && payload && payload.length) {
                       return (
-                        <div className="p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg text-xs">
-                          <p className="font-bold text-slate-900 dark:text-white mb-1">
-                            {payload[0].payload.name}
+                        <div className="p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg text-xs">
+                          <p className="font-bold text-slate-900 dark:text-white">
+                            {payload[0].payload.day}
                           </p>
-                          <p className="text-[#2EA3E6] font-semibold flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-[#2EA3E6]" />
-                            {payload[0].value} Inbound WhatsApp Leads
+                          <p className="text-[#2EA3E6] font-semibold mt-1">
+                            {payload[0].value} Inbound Inquiries
                           </p>
                         </div>
                       );
@@ -156,13 +264,15 @@ export function AnalyticsCharts({ leads }: AnalyticsChartsProps) {
                     return null;
                   }}
                 />
-                <Bar
+                <Area
+                  type="monotone"
                   dataKey="leads"
-                  fill={COLOR_PRIMARY_BLUE}
-                  radius={[6, 6, 0, 0]}
-                  maxBarSize={48}
+                  stroke={COLOR_PRIMARY_BLUE}
+                  strokeWidth={2.5}
+                  fillOpacity={1}
+                  fill="url(#velocityGradient)"
                 />
-              </BarChart>
+              </AreaChart>
             </ResponsiveContainer>
           )}
         </div>

@@ -15,6 +15,8 @@ import {
   Clock,
   Sparkles,
   Building,
+  Copy,
+  Send,
 } from "lucide-react";
 import { Lead, LeadStatus } from "@/types";
 
@@ -38,10 +40,16 @@ export function LeadDetailModal({
   const [notes, setNotes] = useState(lead?.notes || "");
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   const [showNotesSuccess, setShowNotesSuccess] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<string>("intro");
+  const [customReply, setCustomReply] = useState<string>("");
+  const [copiedText, setCopiedText] = useState(false);
 
   React.useEffect(() => {
     if (lead) {
       setNotes(lead.notes || "");
+      const defaultIntro = `Hello ${lead.name}, thank you for contacting MillionSpaces! We received your inquiry regarding "${lead.campaign}". We would love to assist you with finding the ideal space. Could you let us know your preferred date and expected guest count?`;
+      setCustomReply(defaultIntro);
+      setSelectedTemplate("intro");
     }
   }, [lead]);
 
@@ -59,10 +67,7 @@ export function LeadDetailModal({
 
   // WhatsApp formatted link
   const sanitizedPhone = lead.phone.replace(/[^0-9]/g, "");
-  const defaultWhatsAppText = encodeURIComponent(
-    `Hello ${lead.name}, thank you for contacting MillionSpaces regarding your venue inquiry for "${lead.campaign}". How may we assist you today?`
-  );
-  const whatsappUrl = `https://wa.me/${sanitizedPhone}?text=${defaultWhatsAppText}`;
+  const whatsappUrl = `https://wa.me/${sanitizedPhone}?text=${encodeURIComponent(customReply)}`;
 
   // Format date cleanly
   const formattedDate = new Date(lead.created_at).toLocaleString("en-US", {
@@ -82,9 +87,44 @@ export function LeadDetailModal({
     { label: "Closed", bg: "bg-purple-500/10 hover:bg-purple-500/20", text: "text-purple-500" },
   ];
 
+  // Quick reply templates
+  const templates = [
+    {
+      id: "intro",
+      title: "Inquiry Welcome",
+      text: `Hello ${lead.name}, thank you for contacting MillionSpaces! We received your inquiry regarding "${lead.campaign}". We would love to assist you with finding the ideal space. Could you let us know your preferred date and expected guest count?`,
+    },
+    {
+      id: "tour",
+      title: "Schedule Site Tour",
+      text: `Hi ${lead.name}, thank you for checking out MillionSpaces! We would be delighted to host you for a private walkthrough of our partner spaces in Colombo. Are you free for a 20-minute visit tomorrow or Thursday afternoon?`,
+    },
+    {
+      id: "quote",
+      title: "Quote & Package Info",
+      text: `Dear ${lead.name}, here is the overview for "${lead.venue_interest || lead.campaign}". Packages include full AV setups, high-speed Wi-Fi, and optional catering. Would you like us to generate a personalized proposal PDF?`,
+    },
+    {
+      id: "followup",
+      title: "Status Check-in",
+      text: `Hi ${lead.name}, following up on your recent space inquiry with MillionSpaces. Are you still exploring venues for your event? Let us know if you need customized options or special booking terms!`,
+    },
+  ];
+
+  const handleSelectTemplate = (t: typeof templates[0]) => {
+    setSelectedTemplate(t.id);
+    setCustomReply(t.text);
+  };
+
+  const handleCopyText = () => {
+    navigator.clipboard.writeText(customReply);
+    setCopiedText(true);
+    setTimeout(() => setCopiedText(false), 2000);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="relative w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="relative w-full max-w-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
         {/* Modal Header */}
         <div className="p-6 pb-4 border-b border-slate-200/80 dark:border-slate-800/80 flex items-start justify-between bg-slate-50/50 dark:bg-slate-800/30">
           <div className="flex items-center space-x-3.5">
@@ -138,12 +178,60 @@ export function LeadDetailModal({
               href={whatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition active:scale-95"
+              onClick={() => {
+                if (lead.lead_status === "New") {
+                  onStatusChange(lead.id, "Contacted");
+                }
+              }}
+              className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition active:scale-95"
             >
               <MessageCircle className="w-4 h-4" />
               <span>Launch WhatsApp Chat</span>
               <ExternalLink className="w-3 h-3 opacity-75" />
             </a>
+          </div>
+
+          {/* Quick WhatsApp Reply Assistant */}
+          <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-[#FF2E63]" />
+                <span>1-Click WhatsApp Quick Replies</span>
+              </span>
+              <button
+                type="button"
+                onClick={handleCopyText}
+                className="text-xs font-medium text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 flex items-center gap-1 transition"
+              >
+                <Copy className="w-3.5 h-3.5" />
+                <span>{copiedText ? "Copied!" : "Copy Text"}</span>
+              </button>
+            </div>
+
+            {/* Template selector pills */}
+            <div className="flex flex-wrap gap-2 mb-3">
+              {templates.map((tpl) => (
+                <button
+                  key={tpl.id}
+                  type="button"
+                  onClick={() => handleSelectTemplate(tpl)}
+                  className={`px-3 py-1 text-xs font-semibold rounded-lg transition ${
+                    selectedTemplate === tpl.id
+                      ? "bg-[#2EA3E6] text-white shadow-xs"
+                      : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-[#2EA3E6]/40"
+                  }`}
+                >
+                  {tpl.title}
+                </button>
+              ))}
+            </div>
+
+            <textarea
+              rows={3}
+              value={customReply}
+              onChange={(e) => setCustomReply(e.target.value)}
+              className="w-full p-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#2EA3E6]"
+            />
           </div>
 
           {/* Status Switcher Buttons */}
@@ -258,7 +346,7 @@ export function LeadDetailModal({
 
           <button
             onClick={onClose}
-            className="px-4 py-2 text-xs font-semibold rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition"
+            className="px-5 py-2 text-xs font-semibold rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition"
           >
             Done
           </button>

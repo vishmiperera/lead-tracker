@@ -34,3 +34,4 @@ export interface FilterOptions {
   campaign: string; // 'All' | string
   dateRange: 'all' | 'today' | '7days' | '30days';
 }
+

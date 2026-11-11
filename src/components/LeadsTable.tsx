@@ -20,6 +20,9 @@ import {
   Sparkles,
   Eye,
   SlidersHorizontal,
+  Trash2,
+  CheckSquare,
+  Square,
 } from "lucide-react";
 import { Lead, LeadStatus, LeadSource } from "@/types";
 import { CAMPAIGN_OPTIONS, STATUS_OPTIONS, SOURCE_OPTIONS } from "@/lib/mockData";
@@ -30,6 +33,8 @@ interface LeadsTableProps {
   onSearchChange: (q: string) => void;
   onStatusChange: (id: string, newStatus: LeadStatus) => void;
   onSelectLead: (lead: Lead) => void;
+  onBatchStatusChange?: (ids: string[], newStatus: LeadStatus) => void;
+  onBatchDelete?: (ids: string[]) => void;
 }
 
 export function LeadsTable({
@@ -38,12 +43,17 @@ export function LeadsTable({
   onSearchChange,
   onStatusChange,
   onSelectLead,
+  onBatchStatusChange,
+  onBatchDelete,
 }: LeadsTableProps) {
   // Filters state
   const [selectedStatus, setSelectedStatus] = useState<string>("All Statuses");
   const [selectedSource, setSelectedSource] = useState<string>("All Sources");
   const [selectedCampaign, setSelectedCampaign] = useState<string>("All Campaigns");
   const [dateFilter, setDateFilter] = useState<"all" | "today" | "7days" | "30days">("all");
+
+  // Selection state
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   // Sorting state
   const [sortField, setSortField] = useState<"created_at" | "name">("created_at");
@@ -52,9 +62,6 @@ export function LeadsTable({
   // Pagination state
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
-
-  // Active status dropdown menu tracker
-  const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
 
   // Filter and sort logic
   const filteredLeads = useMemo(() => {
@@ -132,6 +139,21 @@ export function LeadsTable({
   const validCurrentPage = Math.min(currentPage, totalPages);
   const startIndex = (validCurrentPage - 1) * pageSize;
   const paginatedLeads = filteredLeads.slice(startIndex, startIndex + pageSize);
+
+  // Toggle selection
+  const handleToggleSelectAll = () => {
+    if (selectedIds.length === paginatedLeads.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(paginatedLeads.map((l) => l.id));
+    }
+  };
+
+  const handleToggleSelectOne = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
 
   // Status Badge Styling Helper
   const getStatusBadge = (status: LeadStatus) => {
@@ -221,9 +243,14 @@ export function LeadsTable({
 
   // Export to CSV
   const handleExportCsv = () => {
-    if (filteredLeads.length === 0) return;
+    const exportData =
+      selectedIds.length > 0
+        ? filteredLeads.filter((l) => selectedIds.includes(l.id))
+        : filteredLeads;
+
+    if (exportData.length === 0) return;
     const headers = ["ID", "Created At", "Name", "Phone", "Status", "Source", "Campaign", "Message", "Notes"];
-    const rows = filteredLeads.map((l) => [
+    const rows = exportData.map((l) => [
       l.id,
       l.created_at,
       `"${l.name.replace(/"/g, '""')}"`,
@@ -254,6 +281,7 @@ export function LeadsTable({
     setSelectedCampaign("All Campaigns");
     setDateFilter("all");
     onSearchChange("");
+    setSelectedIds([]);
   };
 
   const hasActiveFilters =
@@ -299,10 +327,65 @@ export function LeadsTable({
               className="flex items-center space-x-1.5 px-3 py-1.5 text-xs font-semibold rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-[#2EA3E6]/40 text-slate-700 dark:text-slate-300 shadow-sm transition disabled:opacity-50"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>Export CSV</span>
+              <span>
+                {selectedIds.length > 0
+                  ? `Export Selected (${selectedIds.length})`
+                  : "Export CSV"}
+              </span>
             </button>
           </div>
         </div>
+
+        {/* Batch Actions Bar (Visible when rows are selected) */}
+        {selectedIds.length > 0 && (
+          <div className="p-3 rounded-xl bg-[#2EA3E6]/10 border border-[#2EA3E6]/25 flex flex-wrap items-center justify-between gap-2 animate-in fade-in duration-150">
+            <span className="text-xs font-bold text-[#0284C7] dark:text-[#2EA3E6]">
+              {selectedIds.length} lead{selectedIds.length > 1 ? "s" : ""} selected
+            </span>
+            <div className="flex items-center space-x-2">
+              <span className="text-xs text-slate-500 dark:text-slate-400">Mark as:</span>
+              <button
+                onClick={() => {
+                  onBatchStatusChange?.(selectedIds, "Contacted");
+                  setSelectedIds([]);
+                }}
+                className="px-2.5 py-1 text-xs font-bold rounded-lg bg-[#2EA3E6] text-white hover:bg-[#1D92D4] transition"
+              >
+                Contacted
+              </button>
+              <button
+                onClick={() => {
+                  onBatchStatusChange?.(selectedIds, "Qualified");
+                  setSelectedIds([]);
+                }}
+                className="px-2.5 py-1 text-xs font-bold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition"
+              >
+                Qualified
+              </button>
+              <button
+                onClick={() => {
+                  onBatchStatusChange?.(selectedIds, "Closed");
+                  setSelectedIds([]);
+                }}
+                className="px-2.5 py-1 text-xs font-bold rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition"
+              >
+                Closed
+              </button>
+              <button
+                onClick={() => {
+                  if (confirm(`Delete ${selectedIds.length} selected leads?`)) {
+                    onBatchDelete?.(selectedIds);
+                    setSelectedIds([]);
+                  }
+                }}
+                className="p-1.5 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition"
+                title="Delete Selected Leads"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Filter Toolbar */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-1">
@@ -409,7 +492,20 @@ export function LeadsTable({
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-slate-200/80 dark:border-slate-800/80 bg-slate-50/60 dark:bg-slate-800/40 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 select-none">
-              <th className="py-3 px-4 w-44">
+              <th className="py-3 px-3 w-10 text-center">
+                <button
+                  type="button"
+                  onClick={handleToggleSelectAll}
+                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                >
+                  {selectedIds.length === paginatedLeads.length && paginatedLeads.length > 0 ? (
+                    <CheckSquare className="w-4 h-4 text-[#2EA3E6]" />
+                  ) : (
+                    <Square className="w-4 h-4" />
+                  )}
+                </button>
+              </th>
+              <th className="py-3 px-3 w-40">
                 <button
                   onClick={() => {
                     if (sortField === "created_at") {
@@ -425,7 +521,7 @@ export function LeadsTable({
                   <ArrowUpDown className="w-3 h-3" />
                 </button>
               </th>
-              <th className="py-3 px-4 min-w-[160px]">
+              <th className="py-3 px-3 min-w-[150px]">
                 <button
                   onClick={() => {
                     if (sortField === "name") {
@@ -441,18 +537,18 @@ export function LeadsTable({
                   <ArrowUpDown className="w-3 h-3" />
                 </button>
               </th>
-              <th className="py-3 px-4 min-w-[150px]">Phone Number</th>
-              <th className="py-3 px-4 min-w-[130px]">Status</th>
-              <th className="py-3 px-4 min-w-[120px]">Source</th>
-              <th className="py-3 px-4 min-w-[180px]">Campaign</th>
-              <th className="py-3 px-4 min-w-[220px]">Message / Inquiry</th>
-              <th className="py-3 px-4 text-right w-24">Actions</th>
+              <th className="py-3 px-3 min-w-[140px]">Phone Number</th>
+              <th className="py-3 px-3 min-w-[130px]">Status</th>
+              <th className="py-3 px-3 min-w-[110px]">Source</th>
+              <th className="py-3 px-3 min-w-[170px]">Campaign</th>
+              <th className="py-3 px-3 min-w-[210px]">Message / Inquiry</th>
+              <th className="py-3 px-3 text-right w-20">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
             {paginatedLeads.length === 0 ? (
               <tr>
-                <td colSpan={8} className="py-12 text-center">
+                <td colSpan={9} className="py-12 text-center">
                   <div className="max-w-xs mx-auto text-center space-y-2">
                     <p className="font-semibold text-slate-700 dark:text-slate-300">
                       No matching leads found
@@ -475,6 +571,7 @@ export function LeadsTable({
               paginatedLeads.map((lead) => {
                 const statusInfo = getStatusBadge(lead.lead_status);
                 const sourceInfo = getSourceBadge(lead.source);
+                const isSelected = selectedIds.includes(lead.id);
                 const cleanPhone = lead.phone.replace(/[^0-9]/g, "");
                 const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(
                   `Hi ${lead.name}, thank you for contacting MillionSpaces! We received your inquiry regarding "${lead.campaign}". How can we help?`
@@ -484,26 +581,45 @@ export function LeadsTable({
                   <tr
                     key={lead.id}
                     onClick={() => onSelectLead(lead)}
-                    className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors group cursor-pointer"
+                    className={`hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors group cursor-pointer ${
+                      isSelected ? "bg-[#2EA3E6]/5 dark:bg-[#2EA3E6]/10" : ""
+                    }`}
                   >
+                    {/* Checkbox */}
+                    <td
+                      className="py-3.5 px-3 text-center"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleToggleSelectOne(lead.id);
+                      }}
+                    >
+                      <button type="button" className="text-slate-400 hover:text-slate-600">
+                        {isSelected ? (
+                          <CheckSquare className="w-4 h-4 text-[#2EA3E6]" />
+                        ) : (
+                          <Square className="w-4 h-4" />
+                        )}
+                      </button>
+                    </td>
+
                     {/* 1. Date & Time */}
-                    <td className="py-3.5 px-4 text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                    <td className="py-3.5 px-3 text-slate-500 dark:text-slate-400 whitespace-nowrap">
                       {formatDateTime(lead.created_at)}
                     </td>
 
                     {/* 2. Customer Name */}
-                    <td className="py-3.5 px-4 font-semibold text-slate-900 dark:text-white">
+                    <td className="py-3.5 px-3 font-semibold text-slate-900 dark:text-white">
                       <div className="flex items-center space-x-2">
                         <div className="w-7 h-7 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 flex items-center justify-center font-bold text-xs uppercase shrink-0">
                           {lead.name.charAt(0)}
                         </div>
-                        <span className="truncate max-w-[150px]">{lead.name}</span>
+                        <span className="truncate max-w-[140px]">{lead.name}</span>
                       </div>
                     </td>
 
                     {/* 3. Phone Number with WhatsApp Link */}
                     <td
-                      className="py-3.5 px-4 whitespace-nowrap"
+                      className="py-3.5 px-3 whitespace-nowrap"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <a
@@ -511,7 +627,7 @@ export function LeadsTable({
                         target="_blank"
                         rel="noopener noreferrer"
                         title="Open WhatsApp Web chat"
-                        className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 font-medium transition"
+                        className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 font-medium transition"
                       >
                         <MessageCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                         <span className="font-mono text-xs">{lead.phone}</span>
@@ -520,7 +636,7 @@ export function LeadsTable({
 
                     {/* 4. Lead Status with Dropdown selector */}
                     <td
-                      className="py-3.5 px-4 whitespace-nowrap"
+                      className="py-3.5 px-3 whitespace-nowrap"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <div className="relative inline-block">
@@ -544,7 +660,7 @@ export function LeadsTable({
                     </td>
 
                     {/* 5. Source */}
-                    <td className="py-3.5 px-4 whitespace-nowrap">
+                    <td className="py-3.5 px-3 whitespace-nowrap">
                       <span
                         className={`inline-block text-[11px] font-semibold px-2 py-0.5 rounded-md border ${sourceInfo.badgeBg}`}
                       >
@@ -553,9 +669,9 @@ export function LeadsTable({
                     </td>
 
                     {/* 6. Campaign */}
-                    <td className="py-3.5 px-4 text-slate-700 dark:text-slate-300">
+                    <td className="py-3.5 px-3 text-slate-700 dark:text-slate-300">
                       <div
-                        className="truncate max-w-[200px] font-medium"
+                        className="truncate max-w-[180px] font-medium"
                         title={lead.campaign}
                       >
                         {lead.campaign}
@@ -563,9 +679,9 @@ export function LeadsTable({
                     </td>
 
                     {/* 7. Message Preview */}
-                    <td className="py-3.5 px-4 text-slate-600 dark:text-slate-400">
+                    <td className="py-3.5 px-3 text-slate-600 dark:text-slate-400">
                       <p
-                        className="truncate max-w-[240px] text-xs"
+                        className="truncate max-w-[220px] text-xs"
                         title={lead.message}
                       >
                         {lead.message}
@@ -574,7 +690,7 @@ export function LeadsTable({
 
                     {/* 8. Action view button */}
                     <td
-                      className="py-3.5 px-4 text-right whitespace-nowrap"
+                      className="py-3.5 px-3 text-right whitespace-nowrap"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <button

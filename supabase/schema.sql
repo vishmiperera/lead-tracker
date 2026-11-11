@@ -69,3 +69,4 @@ VALUES
   (gen_random_uuid(), now() - INTERVAL '22 hours', 'Tanya Senanayake', '+94715562091', 'Closed', 'Instagram', 'Festive Season Banquet & Rooftop Bookings', 'Booking confirmed! Paid 50% advance for the Galle Face terrace cocktail event on Dec 14th.', 'Galle Face Terrace Suite', 'meta_ad_99201844', 'Deal closed. Advance receipt issued.'),
   (gen_random_uuid(), now() - INTERVAL '1 day', 'Marcus Tan', '+6591283741', 'Qualified', 'Facebook', 'High-End Boardroom & Meeting Pods', 'Hi, I am visiting Colombo from Singapore next week for investor meetings. Need an executive boardroom at One Galle Face for 2 consecutive days.', 'Shangri-La / OGF Executive Room', 'meta_ad_77209144', 'High value foreign lead.')
 ON CONFLICT DO NOTHING;
+

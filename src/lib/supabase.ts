@@ -12,7 +12,7 @@ export const isSupabaseConfigured = Boolean(
     !supabaseUrl.includes("your-supabase-url")
 );
 
-// Client-side Supabase client (only created if configured)
+// Client-side Supabase client
 export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl!, supabaseAnonKey!)
   : null;
@@ -184,4 +184,73 @@ export async function deleteLeadRecord(id: string): Promise<boolean> {
   const updated = current.filter((item) => item.id !== id);
   setLocalStoredLeads(updated);
   return true;
+}
+
+export async function batchUpdateLeadStatus(ids: string[], status: LeadStatus): Promise<boolean> {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { error } = await supabase
+        .from("meta_whatsapp_leads")
+        .update({ lead_status: status })
+        .in("id", ids);
+      if (!error) return true;
+    } catch (err) {
+      console.error("Supabase batch update error:", err);
+    }
+  }
+
+  const current = getLocalStoredLeads();
+  const updated = current.map((item) =>
+    ids.includes(item.id) ? { ...item, lead_status: status } : item
+  );
+  setLocalStoredLeads(updated);
+  return true;
+}
+
+export async function batchDeleteLeads(ids: string[]): Promise<boolean> {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { error } = await supabase
+        .from("meta_whatsapp_leads")
+        .delete()
+        .in("id", ids);
+      if (!error) return true;
+    } catch (err) {
+      console.error("Supabase batch delete error:", err);
+    }
+  }
+
+  const current = getLocalStoredLeads();
+  const updated = current.filter((item) => !ids.includes(item.id));
+  setLocalStoredLeads(updated);
+  return true;
+}
+
+/**
+ * Subscribes to real-time changes on the Supabase meta_whatsapp_leads table
+ */
+export function subscribeToLeadsChanges(onLeadChange: () => void) {
+  if (!isSupabaseConfigured || !supabase) return null;
+
+  try {
+    const channel = supabase
+      .channel("realtime-leads-hub")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "meta_whatsapp_leads",
+        },
+        () => {
+          onLeadChange();
+        }
+      )
+      .subscribe();
+
+    return channel;
+  } catch (err) {
+    console.error("Failed to establish Supabase realtime subscription:", err);
+    return null;
+  }
 }

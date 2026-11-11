@@ -211,3 +211,4 @@ export function NewLeadModal({ isOpen, onClose, onSubmit }: NewLeadModalProps) {
     </div>
   );
 }
+

@@ -11,6 +11,7 @@ import {
   SlidersHorizontal,
   ChevronDown,
   Building2,
+  BookOpen,
 } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 import { AuthModal } from "./AuthModal";
@@ -23,6 +24,7 @@ interface TopBarProps {
   isLiveSupabase: boolean;
   onOpenNewLead: () => void;
   onOpenWebhookTester: () => void;
+  onOpenSetupGuide?: () => void;
   totalLeadsCount: number;
 }
 
@@ -34,6 +36,7 @@ export function TopBar({
   isLiveSupabase,
   onOpenNewLead,
   onOpenWebhookTester,
+  onOpenSetupGuide,
   totalLeadsCount,
 }: TopBarProps) {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
@@ -71,10 +74,16 @@ export function TopBar({
                     <span>Click-to-WhatsApp Meta Ads</span>
                   </span>
                   <span>•</span>
-                  <span className="hidden sm:inline-flex items-center space-x-1">
-                    <Database className="w-3 h-3 text-slate-400" />
-                    <span>{isLiveSupabase ? "Supabase Live" : "Local Storage Demo"}</span>
-                  </span>
+                  <button
+                    onClick={onOpenSetupGuide}
+                    className="hidden sm:inline-flex items-center space-x-1 hover:text-[#2EA3E6] transition cursor-pointer"
+                    title="Click to view Supabase & Webhook Setup Guide"
+                  >
+                    <Database className={`w-3 h-3 ${isLiveSupabase ? "text-emerald-500" : "text-amber-500"}`} />
+                    <span className="underline decoration-dotted underline-offset-2">
+                      {isLiveSupabase ? "Supabase Live" : "Local Demo Mode"}
+                    </span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -105,6 +114,18 @@ export function TopBar({
 
             {/* Right: Actions, Theme Toggle, Admin Pill */}
             <div className="flex items-center space-x-2 sm:space-x-3 shrink-0">
+              {/* Setup Guide Button */}
+              {onOpenSetupGuide && (
+                <button
+                  onClick={onOpenSetupGuide}
+                  title="View Setup & Integration Guide"
+                  className="hidden md:flex items-center space-x-1.5 px-3 py-1.5 text-xs font-semibold rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-[#2EA3E6]/50 text-slate-700 dark:text-slate-300 shadow-sm transition"
+                >
+                  <BookOpen className="w-3.5 h-3.5 text-slate-500" />
+                  <span>Setup Guide</span>
+                </button>
+              )}
+
               {/* Meta Webhook Simulator Button */}
               <button
                 onClick={onOpenWebhookTester}
