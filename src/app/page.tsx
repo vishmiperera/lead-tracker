@@ -24,7 +24,15 @@ import {
   subscribeToLeadsChanges,
   supabase,
 } from "@/lib/supabase";
-import { getStoredAssignees, saveStoredAssignees } from "@/lib/assignees";
+import {
+  getStoredAssignees,
+  saveStoredAssignees,
+  fetchAllAssignees,
+  createAssigneeRecord,
+  updateAssigneeRecord,
+  deleteAssigneeRecord,
+  subscribeToAssigneesChanges,
+} from "@/lib/assignees";
 import { Lead, LeadStatus } from "@/types";
 import { CheckCircle, Sparkles, BookOpen, Table, Columns } from "lucide-react";
 
@@ -47,38 +55,62 @@ export default function DashboardPage() {
   // Assignees state
   const [assignees, setAssignees] = useState<string[]>([]);
 
-  useEffect(() => {
-    setAssignees(getStoredAssignees());
+  const loadAssignees = useCallback(async () => {
+    try {
+      const result = await fetchAllAssignees();
+      if (result.assignees.length > 0) {
+        setAssignees(result.assignees);
+      }
+    } catch (err) {
+      console.warn("Error fetching assignees:", err);
+    }
   }, []);
 
+  useEffect(() => {
+    // Initial load from cache or Supabase
+    setAssignees(getStoredAssignees());
+    loadAssignees();
+
+    // Subscribe to real-time changes on team_assignees
+    const assigneesChannel = subscribeToAssigneesChanges(() => {
+      loadAssignees();
+    });
+
+    return () => {
+      if (assigneesChannel && supabase) {
+        supabase.removeChannel(assigneesChannel);
+      }
+    };
+  }, [loadAssignees]);
+
   // Assignee Management Handlers
-  const handleAddAssignee = (name: string) => {
+  const handleAddAssignee = async (name: string) => {
     const updated = [...assignees, name];
     setAssignees(updated);
-    saveStoredAssignees(updated);
-    setNoticeMessage(`Added team member "${name}"`);
+    await createAssigneeRecord(name);
+    setNoticeMessage(`Added team member "${name}" to Supabase`);
     setTimeout(() => setNoticeMessage(null), 3000);
   };
 
-  const handleUpdateAssignee = (oldName: string, newName: string) => {
+  const handleUpdateAssignee = async (oldName: string, newName: string) => {
     const updated = assignees.map((a) => (a === oldName ? newName : a));
     setAssignees(updated);
-    saveStoredAssignees(updated);
     setLeads((prev) =>
       prev.map((l) => (l.assignee === oldName ? { ...l, assignee: newName } : l))
     );
-    setNoticeMessage(`Renamed team member to "${newName}"`);
+    await updateAssigneeRecord(oldName, newName);
+    setNoticeMessage(`Updated team member "${newName}" in Supabase`);
     setTimeout(() => setNoticeMessage(null), 3000);
   };
 
-  const handleDeleteAssignee = (name: string) => {
+  const handleDeleteAssignee = async (name: string) => {
     const updated = assignees.filter((a) => a !== name);
     setAssignees(updated);
-    saveStoredAssignees(updated);
     setLeads((prev) =>
       prev.map((l) => (l.assignee === name ? { ...l, assignee: undefined } : l))
     );
-    setNoticeMessage(`Removed team member "${name}"`);
+    await deleteAssigneeRecord(name);
+    setNoticeMessage(`Removed team member "${name}" from Supabase`);
     setTimeout(() => setNoticeMessage(null), 3000);
   };
 

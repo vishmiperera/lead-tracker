@@ -62,6 +62,45 @@ FOR DELETE
 USING (true);
 
 -- ============================================================
+-- 6. Table: team_assignees (Synchronized Team Members & Sales Reps)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.team_assignees (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
+    name TEXT NOT NULL UNIQUE
+);
+
+CREATE INDEX IF NOT EXISTS idx_team_assignees_name ON public.team_assignees (name);
+
+ALTER TABLE public.team_assignees ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow public read team_assignees" ON public.team_assignees;
+CREATE POLICY "Allow public read team_assignees"
+ON public.team_assignees FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Allow public insert team_assignees" ON public.team_assignees;
+CREATE POLICY "Allow public insert team_assignees"
+ON public.team_assignees FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow public update team_assignees" ON public.team_assignees;
+CREATE POLICY "Allow public update team_assignees"
+ON public.team_assignees FOR UPDATE USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow public delete team_assignees" ON public.team_assignees;
+CREATE POLICY "Allow public delete team_assignees"
+ON public.team_assignees FOR DELETE USING (true);
+
+-- Seed initial team assignees
+INSERT INTO public.team_assignees (name)
+VALUES
+  ('Kasun Perera'),
+  ('Sarah De Silva'),
+  ('Akeel Mohamed'),
+  ('Tharindu Fernando'),
+  ('Dinuk Weerasinghe')
+ON CONFLICT (name) DO NOTHING;
+
+-- ============================================================
 -- NOTE: The table is now clean and empty, waiting for live Meta leads!
 -- Real inbound leads from Facebook & Instagram Click-to-WhatsApp ads
 -- will automatically be inserted here by the /api/meta-webhook endpoint.
