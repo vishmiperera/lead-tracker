@@ -126,12 +126,12 @@ export function TopBar({
                 <button
                   onClick={onOpenManageAssignees}
                   title="Manage Team Assignees"
-                  className="flex items-center space-x-1.5 px-3 py-1.5 text-xs font-semibold rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-[#2EA3E6]/50 text-slate-700 dark:text-slate-300 shadow-sm transition"
+                  className="flex items-center space-x-1 sm:space-x-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-[#2EA3E6]/50 text-slate-700 dark:text-slate-300 shadow-sm transition"
                 >
                   <Users className="w-3.5 h-3.5 text-[#2EA3E6]" />
-                  <span>Assignees</span>
+                  <span className="hidden sm:inline">Assignees</span>
                   {assigneesCount !== undefined && (
-                    <span className="px-1.5 py-0.5 rounded-full bg-[#2EA3E6]/10 text-[#0284C7] dark:text-[#2EA3E6] text-[10px] font-bold">
+                    <span className="px-1.5 py-0.2 rounded-full bg-[#2EA3E6]/10 text-[#0284C7] dark:text-[#2EA3E6] text-[10px] font-bold">
                       {assigneesCount}
                     </span>
                   )}

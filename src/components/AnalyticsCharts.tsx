@@ -109,9 +109,9 @@ export function AnalyticsCharts({ leads }: AnalyticsChartsProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 mb-6">
       {/* Chart 1: Bar Chart or Velocity Chart */}
-      <div className="lg:col-span-7 p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-soft">
+      <div className="lg:col-span-7 p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-2 border-b border-slate-100 dark:border-slate-800/60">
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 rounded-lg bg-[#2EA3E6]/10 flex items-center justify-center text-[#2EA3E6]">
@@ -279,7 +279,7 @@ export function AnalyticsCharts({ leads }: AnalyticsChartsProps) {
       </div>
 
       {/* Chart 2: Donut / Pie Chart - Split by Source */}
-      <div className="lg:col-span-5 p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-soft">
+      <div className="lg:col-span-5 p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 shadow-xs">
         <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100 dark:border-slate-800/60">
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 rounded-lg bg-[#FF2E63]/10 flex items-center justify-center text-[#FF2E63]">

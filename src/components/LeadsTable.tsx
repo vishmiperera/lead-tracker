@@ -333,7 +333,7 @@ export function LeadsTable({
     customEndDate !== "";
 
   return (
-    <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl shadow-soft overflow-hidden">
+    <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl shadow-xs overflow-hidden">
       {/* Table Header & Controls Bar */}
       <div className="p-5 border-b border-slate-200/80 dark:border-slate-800/80 space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
@@ -623,8 +623,154 @@ export function LeadsTable({
         )}
       </div>
 
-      {/* Main Table Content */}
-      <div className="overflow-x-auto">
+      {/* Mobile Responsive Card View (Visible on screens < md) */}
+      <div className="block md:hidden divide-y divide-slate-100 dark:divide-slate-800">
+        {paginatedLeads.length === 0 ? (
+          <div className="py-12 text-center px-4">
+            <p className="font-semibold text-slate-700 dark:text-slate-300">
+              No matching leads found
+            </p>
+            <p className="text-xs text-slate-400 mt-1">
+              Try adjusting your search criteria or resetting filters.
+            </p>
+            {hasActiveFilters && (
+              <button
+                onClick={handleResetFilters}
+                className="mt-3 text-xs font-semibold px-3.5 py-1.5 rounded-full bg-[#2EA3E6]/10 text-[#0284C7] dark:text-[#2EA3E6] hover:bg-[#2EA3E6]/20 transition"
+              >
+                Clear All Filters
+              </button>
+            )}
+          </div>
+        ) : (
+          paginatedLeads.map((lead) => {
+            const statusInfo = getStatusBadge(lead.lead_status);
+            const sourceInfo = getSourceBadge(lead.source);
+            const isSelected = selectedIds.includes(lead.id);
+            const cleanPhone = lead.phone.replace(/[^0-9]/g, "");
+            const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(
+              `Hi ${lead.name}, thank you for contacting MillionSpaces! We received your inquiry regarding "${lead.campaign}". How can we help?`
+            )}`;
+
+            return (
+              <div
+                key={lead.id}
+                onClick={() => onSelectLead(lead)}
+                className={`p-4 space-y-3 transition cursor-pointer ${
+                  isSelected ? "bg-[#2EA3E6]/5 dark:bg-[#2EA3E6]/10" : "hover:bg-slate-50/60 dark:hover:bg-slate-800/40"
+                }`}
+              >
+                {/* Header: Select, Name, WA link */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2.5">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleToggleSelectOne(lead.id);
+                      }}
+                      className="text-slate-400 hover:text-slate-600"
+                    >
+                      {isSelected ? (
+                        <CheckSquare className="w-4 h-4 text-[#2EA3E6]" />
+                      ) : (
+                        <Square className="w-4 h-4" />
+                      )}
+                    </button>
+                    <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-[#2EA3E6] to-[#00A3E8] text-white flex items-center justify-center font-bold text-xs uppercase shadow-xs">
+                      {lead.name.charAt(0)}
+                    </div>
+                    <div>
+                      <span className="font-bold text-sm text-slate-900 dark:text-white block leading-tight">
+                        {lead.name}
+                      </span>
+                      <span className="text-[11px] text-slate-400">
+                        {formatDateTime(lead.created_at)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <a
+                    href={waUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 font-medium text-xs shadow-xs hover:bg-emerald-100 transition"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5" />
+                    <span className="font-mono text-[11px]">{lead.phone}</span>
+                  </a>
+                </div>
+
+                {/* Message preview */}
+                <p className="text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-2xl border border-slate-100 dark:border-slate-800 line-clamp-2 leading-relaxed">
+                  {lead.message}
+                </p>
+
+                {/* Controls: Status, Assignee, Source */}
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                    {/* Status Select */}
+                    <div className="relative inline-block">
+                      <select
+                        value={lead.lead_status}
+                        onChange={(e) =>
+                          onStatusChange(lead.id, e.target.value as LeadStatus)
+                        }
+                        className={`text-[11px] font-bold px-2.5 py-1 rounded-full border appearance-none pr-5 cursor-pointer focus:outline-none transition ${statusInfo.bg}`}
+                      >
+                        <option value="New">● New</option>
+                        <option value="Contacted">● Contacted</option>
+                        <option value="Qualified">● Qualified</option>
+                        <option value="Closed">● Closed</option>
+                        <option value="Lost">● Lost</option>
+                      </select>
+                      <span className="absolute right-1.5 top-1.5 pointer-events-none text-current text-[8px]">
+                        ▼
+                      </span>
+                    </div>
+
+                    {/* Assignee Select */}
+                    <div className="relative inline-block">
+                      <select
+                        value={lead.assignee || "Unassigned"}
+                        onChange={(e) => {
+                          const val = e.target.value === "Unassigned" ? "" : e.target.value;
+                          onAssigneeChange?.(lead.id, val);
+                        }}
+                        className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border appearance-none pr-5 cursor-pointer focus:outline-none transition ${
+                          lead.assignee
+                            ? "bg-[#2EA3E6]/10 border-[#2EA3E6]/30 text-[#0284C7] dark:text-[#2EA3E6]"
+                            : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500"
+                        }`}
+                      >
+                        <option value="Unassigned">👤 Unassigned</option>
+                        {assignees.map((person) => (
+                          <option key={person} value={person}>
+                            👤 {person}
+                          </option>
+                        ))}
+                      </select>
+                      <span className="absolute right-1.5 top-1.5 pointer-events-none text-current text-[8px]">
+                        ▼
+                      </span>
+                    </div>
+                  </div>
+
+                  <span
+                    className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-md border ${sourceInfo.badgeBg}`}
+                  >
+                    {sourceInfo.label}
+                  </span>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Main Table Content (Desktop & Tablet screens >= md) */}
+      <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-slate-200/80 dark:border-slate-800/80 bg-slate-50/60 dark:bg-slate-800/40 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 select-none">

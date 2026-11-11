@@ -279,7 +279,7 @@ export default function DashboardPage() {
         )}
 
         {/* Status Mode Banner */}
-        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-soft flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="flex items-center space-x-3">
             <div className={`w-3 h-3 rounded-full ${isLiveSupabase ? "bg-emerald-500 animate-pulse" : "bg-[#2EA3E6]"}`} />
             <div>
@@ -325,13 +325,13 @@ export default function DashboardPage() {
         {/* 3. View Switcher & Centralized Inbound Leads */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <div className="flex rounded-xl p-0.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60">
+            <div className="flex rounded-full p-1 bg-slate-100 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 shadow-xs">
               <button
                 type="button"
                 onClick={() => setActiveView("table")}
-                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition flex items-center space-x-1.5 ${
+                className={`px-3.5 py-1.5 text-xs font-bold rounded-full transition flex items-center space-x-1.5 ${
                   activeView === "table"
-                    ? "bg-white dark:bg-slate-700 text-[#2EA3E6] shadow-xs"
+                    ? "bg-white dark:bg-slate-700 text-[#0284C7] dark:text-[#2EA3E6] shadow-xs"
                     : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
                 }`}
               >
@@ -341,9 +341,9 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={() => setActiveView("kanban")}
-                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition flex items-center space-x-1.5 ${
+                className={`px-3.5 py-1.5 text-xs font-bold rounded-full transition flex items-center space-x-1.5 ${
                   activeView === "kanban"
-                    ? "bg-white dark:bg-slate-700 text-[#2EA3E6] shadow-xs"
+                    ? "bg-white dark:bg-slate-700 text-[#0284C7] dark:text-[#2EA3E6] shadow-xs"
                     : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
                 }`}
               >
